@@ -1,13 +1,8 @@
 -- Jet ------------------------------------------------------------------------
 
--- TODO: test everything, a lot!
--- Make a wiki with more examples, and also best practices
--- e.g. putting jet config at the end of init.vim/lua, since
--- it loads plugins EARLY, and in order!
-
 local fn = vim.fn
 
--- Stores all registered plugins and their configs.
+-- List of all plugins.
 local registry = {}
 
 -- Path to pack dir.
@@ -16,7 +11,6 @@ local pack_path = fn.stdpath('config') .. "/pack/"
 -- UTIL FUNCTIONS -------------------------------------------------------------
 
 -- Joins two lists together.
--- Does not mutate originals.
 local function list_join(a, b)
     local joint = {}
     for _, v in ipairs(a) do
@@ -29,19 +23,19 @@ local function list_join(a, b)
 end
 
 -- Returns first item that evalutes
--- to true when f is applied.
+-- to true when `f` is applied.
 local function list_find(list, f)
     for _, v in ipairs(list) do
         if f(v) then return v end
     end
 end
 
--- Returns plugin matching name.
+-- Returns plugin matching `name`.
 local function find_plugin(name)
     return list_find(registry, function(p) return p.name == name end)
 end
 
--- Path to pack's start/opt dir
+-- Path to `pack`'s start/opt dir.
 local function get_path(opt, pack)
     return pack_path .. pack .. "/" .. opt .. "/"
 end
@@ -61,7 +55,7 @@ local function get_err_str(code)
     return "Jet E" .. code .. ": " .. errs[code]
 end
 
--- Logs message with error highlighting.
+-- Logs error message with error highlighting.
 local function echo_err(code)
     vim.cmd("echohl Error")
     vim.cmd("echom '" .. get_err_str(code) .. "'")
@@ -81,7 +75,6 @@ local function prep_jet_buf()
     vim.bo.swapfile = false
     vim.bo.buflisted = false
     vim.bo.syntax = "markdown"
-
     vim.wo.statusline = "%= Jet %="
 
     fn.setline(1, "# Jet")
@@ -115,7 +108,8 @@ end
 
 -- LOGGING --------------------------------------------------------------------
 
--- Logs to the custom Jet buffer.
+-- Logs to the custom Jet buffer. Takes
+-- multiple args, each logged to a new line.
 local function log(...)
     open_jet_buf()
     vim.opt_local.modifiable = true
@@ -142,7 +136,8 @@ local function log_to(id, text)
     if line_nr == nil then
         -- Get the last line of the buffer.
         line_nr = fn.line("$")
-        -- Store the line nr + 1, since append writes to the line below.
+        -- Store the line nr + 1, since append
+        -- writes to the line below.
         log_lines[id] = line_nr + 1
         fn.append(line_nr, str)
     else
@@ -152,7 +147,8 @@ local function log_to(id, text)
     vim.opt_local.modifiable = false
 end
 
--- Clear previous contents of Jet buf and reset log_lines.
+-- Clear previous contents of Jet buf
+-- and reset log_lines.
 local function clear_jet_buf()
     open_jet_buf()
 
@@ -160,14 +156,13 @@ local function clear_jet_buf()
     fn.deletebufline("Jet", 2, fn.line("$"))
     vim.opt_local.modifiable = false
 
-    -- Also reset log_lines since buf is cleared
     log_lines = {}
 end
 
 
 -- PLUGIN FUNCTIONS -----------------------------------------------------------
 
--- Returns whether the plugin is installed
+-- Returns whether `plugin` is installed
 -- and located in the proper opt/start dir.
 local function is_optsynced(plugin)
     local found = io.open(plugin.dir .. "/.git/HEAD", "r")
@@ -178,9 +173,9 @@ local function is_optsynced(plugin)
     return false
 end
 
--- Check if a plugin is installed. We consider a
--- plugin installed if its .git/HEAD file is readable
--- in either pack/start/plugin/ or pack/opt/plugin/
+-- Check if a plugin is installed. We consider a plugin
+-- installed if its .git/HEAD file is readable in
+-- either <pack>/start/<plugin>/ or <pack>/opt/<plugin>/.
 local function is_installed(plugin)
     -- If it is optsynced, then it's already in it's
     -- appropriate directory.
@@ -188,7 +183,7 @@ local function is_installed(plugin)
         return true
     end
 
-    -- Otherwise, we check the OTHER directory
+    -- Otherwise, we check the OTHER directory.
     local optdir  = plugin.opt and "start" or "opt"
     local optpath = get_path(optdir, plugin.pack) .. plugin.name
     local found   = io.open(optpath .. "/.git/HEAD", "r")
@@ -222,8 +217,8 @@ local function get_plugin_flags(plugin)
     return plugin.flags
 end
 
--- Initialize a plugin object, to be
--- stored in the registry.
+-- Initialize a plugin object, and
+-- store it in the registry.
 local function init_plugin(pack, data)
     local name  = get_plugin_name(data)
     local flags = get_plugin_flags(data)
@@ -256,8 +251,8 @@ local function optsync_plugin(plugin)
     local installed = is_installed(plugin)
 
     if installed and not synced then
-        -- If it's an opt plugin rename from startpath
-        -- to current dir, otherwise vice versa.
+        -- If it's an opt plugin, rename from startpath to
+        -- current dir (i.e optpath), otherwise vice versa.
         if plugin.opt then
             local old = get_path("start", plugin.pack) .. plugin.name
             fn.mkdir(plugin.dir, "p")
@@ -279,7 +274,7 @@ local function lazy_load(name)
     if plugin.cfg then plugin.cfg() end
 end
 
--- Initializes plugin's lazy loading handlers.
+-- Initializes plugin's lazy loading autocmd.
 local function init_lazy_load(plugin)
     if plugin.opt and plugin.on then
         local grp = "JetLazyLoad"
@@ -383,16 +378,16 @@ end
 
 -- UPDATE/INSTALL -------------------------------------------------------------
 
--- Spawns git process to install each missing plugin.
--- arg: Optional. Name of a pack, only missing
---      plugins from this pack will be installed.
-local function install_plugins(arg)
+-- Spawns git process to install missing plugins.
+-- If optional `pack` arg is given, only missing
+-- plugins from that pack will be installed.
+local function install_plugins(pack)
     clear_jet_buf()
     log("", "Install", "-------")
 
     local installed = 0
     for _, plugin in ipairs(registry) do
-        if not arg or plugin.pack == arg then
+        if not pack or plugin.pack == pack then
             if not is_installed(plugin) then
                 git_spawn("clone", plugin)
                 installed = installed + 1
@@ -406,14 +401,14 @@ local function install_plugins(arg)
 end
 
 -- Spawns git process to update each plugin.
--- arg: Optional. Name of a pack, only plugins
---      from this pack will be updated.
-local function update_plugins(arg)
+-- If optional `pack` arg is given, only plugins
+-- from that pack will be installed.
+local function update_plugins(pack)
     clear_jet_buf()
     log("", "Update", "------")
 
     for _, plugin in ipairs(registry) do
-        if not arg or plugin.pack == arg then
+        if not pack or plugin.pack == pack then
             git_spawn("pull", plugin)
         end
     end
@@ -422,9 +417,8 @@ end
 
 -- CLEAN PLUGINS --------------------------------------------------------------
 
--- Cleans all plugins from the given
--- directory. Returns number of plugins
--- removed.
+-- Cleans unused plugins from the given `dir`.
+-- Returns number of plugins removed.
 local function clean_dir(dir)
     local count = 0
     if fn.isdirectory(dir) then
@@ -444,7 +438,7 @@ end
 -- Cleans unused packs/plugins from pack_path
 local function clean_plugins()
     clear_jet_buf()
-    log("")
+    log("", "Clean", "-----")
 
     local packs = {}
     -- Set pack name as keys to handle duplicates
@@ -464,7 +458,6 @@ local function clean_plugins()
             plugin_count = plugin_count + clean_dir(optpath)
             plugin_count = plugin_count + clean_dir(startpath)
         else
-            -- remove the entire pack dir
             log("Removing unused pack: " .. pack_dir)
             fn.delete(pack_path .. pack_dir, "rf")
             pack_count = pack_count + 1
@@ -486,9 +479,7 @@ end
 
 -- LIST PLUGINS ---------------------------------------------------------------
 
--- Log which plugins are installed and which
--- ones missing.
--- TODO: show installed AND synced status.
+-- Log which plugins are installed/missing.
 local function list_plugins()
     clear_jet_buf()
     log("", "Plugins", "-------")
@@ -510,7 +501,7 @@ end
 -- ADD PACK -------------------------------------------------------------------
 
 -- Immediately loads all plugins for the
--- given pack.
+-- given `pack`.
 local function add_pack(pack)
     for _, plugin in ipairs(registry) do
         if plugin.pack == pack then
