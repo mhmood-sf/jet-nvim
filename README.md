@@ -1,80 +1,77 @@
 # Jet
 
-Jet is a simple, single-file plugin manager for neovim.
+Jet is a simple, single-file (~500LOC) plugin manager for neovim. The aim is to
+find a middleground between the lightweight [paq-nvim](https://github.com/savq/paq-nvim)
+and the heavyweight [packer.nvim](https://github.com/wbthomason/packer.nvim).
+
+> ⚠ Jet is not yet at a 'stable' stage - most features mostly work, but
+> there is still testing and bug-hunting to be done. Please feel free to
+> open an issue if you encounter bugs or strange behaviour.
+
+### Features
+- Written and configured in lua
+- Lazy-loading capabilities
+- Async installation
+- Group plugins into "packs"
 
 ### Installation
 
-Install `jet.lua` into the `lua/` directory:
+You can either clone this repository into your `lua/` directory:
 ```
-curl -o ~/.config/nvim/lua/jet/jet.lua https://raw.githubusercontent.com/quintik/jet/master/jet.lua
+git clone https://github.com/quintik/jet-nvim ~/.config/nvim/lua/
+```
+...or you can simply install the `jet.lua` file into your `lua/` directory:
+```
+curl -o ~/.config/nvim/lua/jet.lua https://raw.githubusercontent.com/quintik/jet/master/jet.lua
 ```
 
 ### Usage
 
-Add a lua block for your Jet config inside your init.vim:
 ```lua
-lua << EOF
-require "jet/jet"
+require "jet"
 
--- Initialize Jet with a table containing two fields:
--- path: path to your `pack` directory, usually
---       just `~/.config/nvim`, but can be different
---       if you want to install your plugins elsewhere.
--- ssh:  path to ssh key if you want Jet to
---       automatically start the ssh agent if you use
---       that for git.
-Jet.pack { path = "~/.config/nvim", ssh = "~/.ssh/id_rsa" }
+-- All plugins are grouped under "packs", and each pack
+-- is stored in `pack_path/<pack>/` (see :h packpath).
+Jet.pack "myplugins" {
+    -- You can supply just the uri:
+    "https://github.com/quintik/qline"
 
--- Create a new group for plugins. These plugins will
--- be stored under `pack/<group>/`.
-local quintik = Jet.group "quintik"
+    -- Or a table:
+    { uri  = "https://github.com/quintik/Snip",
+      name = "nvim_snip",
+      opt  = true },
 
--- Plugins registered with `<group>:start` are always
--- loaded on startup. These are placed under
--- `pack/<group>/start/`.
-quintik:start {
-    "git@github.com:quintik/qline",
-    "git@github.com:quintik/snap"
+    -- Example with all options (see Options for more details):
+    { uri   = "https://github.com/author/plugin",
+      name  = "plugin",
+      opt   = true,
+      flags = { "--branch", "dev" },
+      on    = "Event",
+      pat   = "*",
+      cfg   = function() require "cfg" end }
 }
-
--- Other plugins
-local jet = Jet.group "jet"
-
-jet:start {
-    "git@github.com:ervandew/supertab",
-    "git@github.com:jiangmiao/auto-pairs",
-    "git@github.com:vimwiki/vimwiki"
-}
-
-
---[[
-local test = Jet.group "test"
-
-test:start {
-    "uri",
-
-    {
-        uri = "uri",
-        name = "gloop",
-        flags = { "--depth", "1", "--branch", "feature/xclip" }
-    }
-}
-
-test:opt {
-    "uri",
-
-    {
-        uri = "uri",
-        name = "glopt",
-        args = { "--depth", "1", "--branch", "feature/xclip" },
-        load_evt = "CmdUndefined",
-        load_fn = function(match, _buf, _file) return match == "Telescope" end,
-        post_load = function() print("Telescope loaded.") end,
-        post_install = function() print("Telescope installed.") end
-    }
-}
---]]
-
-EOF
 ```
+
+### Commands
+
+- `JetInstall`: Installs missing packages from configuration.
+- `JetUpdate`: Updates all packages.
+- `JetClean`: Cleans unused packs and plugins.
+- `JetList`: Shows list of installed and missing packages.
+- `JetAdd <pack>`: Immediately loads all plugins for the given pack.
+
+### Options
+
+Jet supports the following options:
+| Option | Type     | Description                                             |
+|--------|----------|---------------------------------------------------------|
+| uri    | string   | Required. The uri for the plugin.                       |
+| name   | string   | Alternative name for the plugin to use locally.         |
+| opt    | boolean  | If true, the plugin will not be loaded on startup.      |
+| flags  | table    | Extra flags/args to supply to git commands.             |
+| on     | string   | Event name for lazy loading plugins. See `:h autocmd`   |
+| pat    | string   | Pattern for lazy loading plugins.                       |
+| cfg    | function | Executed after a plugin is lazy loaded.                 |
+
+For examples, see...
 
