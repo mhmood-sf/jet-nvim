@@ -8,13 +8,13 @@ and the heavyweight [packer.nvim](https://github.com/wbthomason/packer.nvim).
 > there is still testing and bug-hunting to be done. Please feel free to
 > open an issue if you encounter bugs or strange behaviour.
 
-### Features
+## Features
 - Written and configured in lua
 - Lazy-loading capabilities
 - Async installation
 - Group plugins into "packs"
 
-### Installation
+## Installation
 
 You can either clone this repository into your `lua/` directory:
 ```
@@ -25,7 +25,7 @@ git clone https://github.com/quintik/jet-nvim ~/.config/nvim/lua/
 curl -o ~/.config/nvim/lua/jet.lua https://raw.githubusercontent.com/quintik/jet/master/jet.lua
 ```
 
-### Usage
+## Usage
 
 ```lua
 require "jet"
@@ -52,15 +52,15 @@ Jet.pack "myplugins" {
 }
 ```
 
-### Commands
+## Commands
 
-- `JetInstall`: Installs missing packages from configuration.
-- `JetUpdate`: Updates all packages.
+- `JetInstall [pack]`: Installs missing plugins. If `pack` is given, install missing plugins from that pack.
+- `JetUpdate [pack]`: Updates all plugins. If `pack` is given, install missing plugins from that pack.
 - `JetClean`: Cleans unused packs and plugins.
-- `JetList`: Shows list of installed and missing packages.
+- `JetList`: Shows list of installed and missing plugins.
 - `JetAdd <pack>`: Immediately loads all plugins for the given pack.
 
-### Options
+## Options
 
 Jet supports the following options:
 | Option | Type     | Description                                             |
@@ -74,4 +74,3 @@ Jet supports the following options:
 | cfg    | function | Executed after a plugin is lazy loaded.                 |
 
 For examples, see...
-
