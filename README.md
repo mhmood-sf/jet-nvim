@@ -70,7 +70,5 @@ Jet supports the following options:
 | opt    | boolean  | If true, the plugin will not be loaded on startup.      |
 | flags  | table    | Extra flags/args to supply to git commands.             |
 | on     | string   | Event name for lazy loading plugins. See `:h autocmd`   |
-| pat    | string   | Pattern for lazy loading plugins.                       |
+| pat    | string   | Pattern for lazy loading plugins. See `:h autocmd`      |
 | cfg    | function | Executed after a plugin is lazy loaded.                 |
-
-For examples, see...
