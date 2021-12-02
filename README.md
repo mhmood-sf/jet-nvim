@@ -71,4 +71,4 @@ Jet supports the following options:
 | flags  | table    | Extra flags/args to supply to git commands.             |
 | on     | string   | Event name for lazy loading plugins. See `:h autocmd`   |
 | pat    | string   | Pattern for lazy loading plugins. See `:h autocmd`      |
-| cfg    | function | Executed after a plugin is lazy loaded.                 |
+| cfg    | function | Executed after a plugin is loaded.                      |
