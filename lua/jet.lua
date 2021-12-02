@@ -353,9 +353,9 @@ local function git_spawn(subcmd, plugin)
     end)
 
     -- Prepare command.
-    local cmds = { subcmd, plugin.uri, plugin.dir, "--progress" }
+    local cmdargs = { subcmd, plugin.uri, plugin.dir, "--progress" }
     local opts = {
-        args = list_join(cmds, plugin.flags),
+        args = list_join(cmdargs, plugin.flags),
         detached = true,
         hide = true,
         stdio = {nil, stdout, stderr}
