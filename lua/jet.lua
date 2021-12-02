@@ -283,7 +283,7 @@ local function init_lazy_load(plugin)
         local pat = lst or "*"
 
         local subcmd = "lua " .. "Jet.lazy('" .. plugin.name .. "')"
-        local cmdlist = {"au", grp, evt, pat, subcmd}
+        local cmdlist = {"au", grp, evt, pat, "++once", subcmd}
         vim.cmd("augroup JetLazyLoad")
         vim.cmd(table.concat(cmdlist, " "))
     end
@@ -421,7 +421,7 @@ end
 -- Returns number of plugins removed.
 local function clean_dir(dir)
     local count = 0
-    if fn.isdirectory(dir) then
+    if fn.isdirectory(dir) ~= 0 then
         local plugin_dirs = fn.readdir(dir)
         for _, plugin in ipairs(plugin_dirs) do
             local found = find_plugin(plugin)
