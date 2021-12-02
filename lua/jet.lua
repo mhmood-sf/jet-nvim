@@ -6,7 +6,9 @@ local fn = vim.fn
 local registry = {}
 
 -- Path to pack dir.
-local pack_path = fn.stdpath('config') .. "/pack/"
+-- Note that jet_packpath must also be added
+-- to vim's packpath variable by the user.
+local pack_path = (vim.g.jet_packpath or fn.stdpath('config')) .. "/pack/"
 
 -- UTIL FUNCTIONS -------------------------------------------------------------
 
@@ -524,12 +526,13 @@ vim.cmd([[
 ]])
 
 Jet = {
-    pack    = init_pack,
-    lazy    = lazy_load,
-    install = install_plugins,
-    update  = update_plugins,
-    clean   = clean_plugins,
-    list    = list_plugins,
-    add     = add_pack,
+    pack     = init_pack,
+    lazy     = lazy_load,
+    install  = install_plugins,
+    update   = update_plugins,
+    clean    = clean_plugins,
+    list     = list_plugins,
+    add      = add_pack,
+    registry = registry
 }
 
