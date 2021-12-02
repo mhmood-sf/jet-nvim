@@ -22,7 +22,7 @@ git clone https://github.com/quintik/jet-nvim ~/.config/nvim/lua/
 ```
 ...or you can simply install the `jet.lua` file into your `lua/` directory:
 ```
-curl -o ~/.config/nvim/lua/jet.lua https://raw.githubusercontent.com/quintik/jet/master/lua/jet.lua
+curl -o ~/.config/nvim/lua/jet.lua https://raw.githubusercontent.com/quintik/jet-nvim/master/lua/jet.lua
 ```
 
 ## Usage
