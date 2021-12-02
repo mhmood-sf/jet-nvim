@@ -12,7 +12,7 @@ and the heavyweight [packer.nvim](https://github.com/wbthomason/packer.nvim).
 - Written and configured in lua
 - Lazy-loading capabilities
 - Async installation
-- Group plugins into "packs"
+- Group plugins into "packs", making large configurations more manageable
 
 ## Installation
 
