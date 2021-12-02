@@ -308,7 +308,7 @@ local function init_pack(name)
                 local plugin = init_plugin(name, data)
                 table.insert(registry, plugin)
                 optsync_plugin(plugin)
-                if not plugin.opt then
+                if not plugin.opt and is_installed(plugin) then
                     vim.cmd("packadd " .. plugin.name)
                     if plugin.cfg then plugin.cfg() end
                 end
