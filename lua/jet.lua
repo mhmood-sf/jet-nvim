@@ -1,4 +1,4 @@
--- Jet ------------------------------------------------------------------------
+--- Jet
 
 local fn = vim.fn
 
@@ -10,7 +10,7 @@ local registry = {}
 -- to vim's packpath variable by the user.
 local pack_path = (vim.g.jet_packpath or fn.stdpath('config')) .. "/pack/"
 
--- UTIL FUNCTIONS -------------------------------------------------------------
+--- UTIL FUNCTIONS
 
 -- Joins two lists together.
 local function list_join(a, b)
@@ -43,7 +43,7 @@ local function get_path(opt, pack)
 end
 
 
--- ERROR HANDLING -------------------------------------------------------------
+--- ERROR HANDLING
 
 -- Jet errors.
 local errs = {
@@ -65,7 +65,7 @@ local function echo_err(code)
 end
 
 
--- JET BUFFER -----------------------------------------------------------------
+--- JET BUFFER
 
 -- Sets window/buffer options
 -- and header for the jet buffer.
@@ -108,7 +108,7 @@ local function open_jet_buf()
 end
 
 
--- LOGGING --------------------------------------------------------------------
+--- LOGGING
 
 -- Logs to the custom Jet buffer. Takes
 -- multiple args, each logged to a new line.
@@ -162,39 +162,61 @@ local function clear_jet_buf()
 end
 
 
--- PLUGIN FUNCTIONS -----------------------------------------------------------
+--- OPTSYNCING
 
--- Returns whether `plugin` is installed
--- and located in the proper opt/start dir.
+-- Check if a plugin is optsynced. We consider a plugin
+-- optsynced if its .git/HEAD file is readable in the
+-- directory specified by `plugin.dir`. If .git/HEAD is
+-- readable in either the <pack>/start/<plugin> or
+-- <pack>/opt/<plugin> dir, we consider it installed but not
+-- optsynced. This function returns 1 for optsynced, 0 for
+-- installed, and -1 otherwise.
 local function is_optsynced(plugin)
-    local found = io.open(plugin.dir .. "/.git/HEAD", "r")
-    if found then
-        io.close(found)
-        return true
-    end
-    return false
-end
-
--- Check if a plugin is installed. We consider a plugin
--- installed if its .git/HEAD file is readable in
--- either <pack>/start/<plugin>/ or <pack>/opt/<plugin>/.
-local function is_installed(plugin)
-    -- If it is optsynced, then it's already in it's
-    -- appropriate directory.
-    if is_optsynced(plugin) then
-        return true
+    local found_synced = io.open(plugin.dir .. "/.git/HEAD", "r")
+    if found_synced then
+        io.close(found_synced)
+        return 1
     end
 
-    -- Otherwise, we check the OTHER directory.
-    local optdir  = plugin.opt and "start" or "opt"
-    local optpath = get_path(optdir, plugin.pack) .. plugin.name
-    local found   = io.open(optpath .. "/.git/HEAD", "r")
-    if found then
-        io.close(found)
-        return true
+    local alt_dir  = plugin.opt and "start" or "opt"
+    local alt_path = get_path(alt_dir, plugin.pack) .. plugin.name
+    local found_installed = io.open(alt_path .. "/.git/HEAD", "r")
+    if found_installed then
+        io.close(found_installed)
+        return 0
     end
-    return false
+
+    return -1
 end
+
+-- Sync a plugin to it's appropriate opt/start
+-- directory. Returns true if synced successfully,
+-- otherwise false (meaning plugin is not installed).
+local function optsync_plugin(plugin)
+    local sync_status = is_optsynced(plugin)
+
+    if sync_status == 1 then
+        return true
+    elseif sync_status == 0 then
+        -- If it's an opt plugin, rename from startpath to
+        -- current dir (i.e optpath), otherwise vice versa.
+        if plugin.opt then
+            local old = get_path("start", plugin.pack) .. plugin.name
+            fn.mkdir(plugin.dir, "p")
+            os.rename(old, plugin.dir)
+        else
+            local old = get_path("opt", plugin.pack) .. plugin.name
+            fn.mkdir(plugin.dir, "p")
+            os.rename(old, plugin.dir)
+        end
+        return true
+    else
+        return false
+    end
+end
+
+
+--- PLUGIN-RELATED UTILS
 
 -- Returns plugin name if provided by user,
 -- otherwise obtains name from plugin uri.
@@ -219,6 +241,34 @@ local function get_plugin_flags(plugin)
     return plugin.flags
 end
 
+-- Loads a specific plugin and runs it's cfg function.
+local function load_plugin(name)
+    local plugin = find_plugin(name)
+    vim.cmd("packadd " .. name)
+    if plugin.cfg then plugin.cfg() end
+end
+
+
+--- LAZY LOADING
+
+-- Initializes plugin's lazy loading autocmd.
+local function init_lazy_load(plugin)
+    if plugin.opt and plugin.on then
+        local grp = "JetLazyLoad"
+        local evt = table.concat(plugin.on, ",")
+        local lst = plugin.pat and table.concat(plugin.pat, ",")
+        local pat = lst or "*"
+
+        local subcmd = "lua " .. "Jet.load('" .. plugin.name .. "')"
+        local cmdlist = {"au", grp, evt, pat, "++once", subcmd}
+        vim.cmd("augroup JetLazyLoad")
+        vim.cmd(table.concat(cmdlist, " "))
+    end
+end
+
+
+--- INIT PACK/PLUGIN
+
 -- Initialize a plugin object, and
 -- store it in the registry.
 local function init_plugin(pack, data)
@@ -228,7 +278,7 @@ local function init_plugin(pack, data)
     local opt   = (type(data.opt) == 'nil') and false or data.opt
     local dir   = pack_path .. pack .. (opt and "/opt/" or "/start/") .. name
 
-    local obj = {
+    return {
         name  = name,
         pack  = pack,
         flags = flags,
@@ -239,64 +289,11 @@ local function init_plugin(pack, data)
         pat   = data.pat,
         cfg   = data.cfg
     }
-
-    return obj
 end
 
-
--- OPTSYNC PLUGIN -------------------------------------------------------------
-
--- Sync a plugin to it's appropriate
--- opt/start directory.
-local function optsync_plugin(plugin)
-    local synced    = is_optsynced(plugin)
-    local installed = is_installed(plugin)
-
-    if installed and not synced then
-        -- If it's an opt plugin, rename from startpath to
-        -- current dir (i.e optpath), otherwise vice versa.
-        if plugin.opt then
-            local old = get_path("start", plugin.pack) .. plugin.name
-            fn.mkdir(plugin.dir, "p")
-            os.rename(old, plugin.dir)
-        else
-            local old = get_path("opt", plugin.pack) .. plugin.name
-            fn.mkdir(plugin.dir, "p")
-            os.rename(old, plugin.dir)
-        end
-    end
-end
-
-
--- LAZY LOADING ---------------------------------------------------------------
-
-local function lazy_load(name)
-    local plugin = find_plugin(name)
-    vim.cmd("packadd " .. name)
-    if plugin.cfg then plugin.cfg() end
-end
-
--- Initializes plugin's lazy loading autocmd.
-local function init_lazy_load(plugin)
-    if plugin.opt and plugin.on then
-        local grp = "JetLazyLoad"
-        local evt = table.concat(plugin.on, ",")
-        local lst = plugin.pat and table.concat(plugin.pat, ",")
-        local pat = lst or "*"
-
-        local subcmd = "lua " .. "Jet.lazy('" .. plugin.name .. "')"
-        local cmdlist = {"au", grp, evt, pat, "++once", subcmd}
-        vim.cmd("augroup JetLazyLoad")
-        vim.cmd(table.concat(cmdlist, " "))
-    end
-end
-
-
--- INIT PACK ------------------------------------------------------------------
-
--- Adds pack to registry. Returns a function that takes a
--- list of plugin configs inside and adds them to registry.
-local function init_pack(name)
+-- Returns a function that takes a list of plugin configs,
+-- adds them to the registry and initializes them.
+local function init_pack(pack)
     local register_pack_plugins = function(list)
         for _, data in ipairs(list) do
             local data_t = type(data)
@@ -307,14 +304,15 @@ local function init_pack(name)
                 echo_err(12)
                 return
             else
-                local plugin = init_plugin(name, data)
+                local plugin = init_plugin(pack, data)
                 table.insert(registry, plugin)
-                optsync_plugin(plugin)
-                if not plugin.opt and is_installed(plugin) then
-                    vim.cmd("packadd " .. plugin.name)
-                    if plugin.cfg then plugin.cfg() end
+                local optsynced = optsync_plugin(plugin)
+
+                if plugin.opt then
+                    init_lazy_load(plugin)
+                elseif optsynced then
+                    load_plugin(plugin.name)
                 end
-                init_lazy_load(plugin)
             end
         end
     end
@@ -323,7 +321,7 @@ local function init_pack(name)
 end
 
 
--- GIT PROCESS ----------------------------------------------------------------
+--- GIT SPAWN
 
 -- Store handles for easy access.
 local spawned_handles = {}
@@ -340,8 +338,7 @@ local function git_spawn(subcmd, plugin)
         if err then
             log_to(logid, err)
         elseif data then
-            -- Data can include whitespace/newlines,
-            -- log each line separately.
+            -- Ignore whitespace/newlines.
             local lines = string.gmatch(data, "%s*([^\r\n]*)%s*")
             for line in lines do
                 -- Don't log empty lines.
@@ -378,7 +375,7 @@ local function git_spawn(subcmd, plugin)
 end
 
 
--- UPDATE/INSTALL -------------------------------------------------------------
+--- INSTALL
 
 -- Spawns git process to install missing plugins.
 -- If optional `pack` arg is given, only missing
@@ -402,6 +399,9 @@ local function install_plugins(pack)
     end
 end
 
+
+--- UPDATE
+
 -- Spawns git process to update each plugin.
 -- If optional `pack` arg is given, only plugins
 -- from that pack will be installed.
@@ -417,7 +417,7 @@ local function update_plugins(pack)
 end
 
 
--- CLEAN PLUGINS --------------------------------------------------------------
+--- CLEAN PLUGINS
 
 -- Cleans unused plugins from the given `dir`.
 -- Returns number of plugins removed.
@@ -527,7 +527,7 @@ vim.cmd([[
 
 Jet = {
     pack     = init_pack,
-    lazy     = lazy_load,
+    load     = load_plugin,
     install  = install_plugins,
     update   = update_plugins,
     clean    = clean_plugins,
