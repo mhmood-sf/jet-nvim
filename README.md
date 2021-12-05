@@ -46,8 +46,8 @@ Jet.pack "myplugins" {
       name  = "plugin",
       opt   = true,
       flags = { "--branch", "dev" },
-      on    = "Event",
-      pat   = "*",
+      on    = { "Event" },
+      pat   = { ".ft" },
       cfg   = function() require "cfg" end }
 }
 ```
