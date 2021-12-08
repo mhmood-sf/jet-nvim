@@ -13,7 +13,7 @@ local function prep()
     augroup end ]]
 
     Jet.pack "test1" {
-        { uri  = "git@github.com:quintik/qline",
+        { uri  = "git@github.com:quintik/qdfgsdgline",
           opt  = true },
 
         { name = "snipsnipsnip",
@@ -31,7 +31,7 @@ local function prep()
           pat = { "NERDTree" } },
 
         { uri = "git@github.com:Xuyuanp/scrollbar.nvim",
-          opt = true,
+          opt = false,
           on  = { "WinEnter" },
           cfg = function() vim.cmd(scrollbarcfg) end }
     }
