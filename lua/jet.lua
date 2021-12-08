@@ -247,6 +247,7 @@ end
 local function load_plugin(name)
     local plugin = find_plugin(name)
     vim.cmd("packadd " .. name)
+    plugin._loaded = true
     if plugin.cfg then plugin.cfg() end
 end
 
@@ -280,15 +281,16 @@ local function init_plugin(pack, data)
     local dir   = pack_path .. pack .. (opt and "/opt/" or "/start/") .. name
 
     return {
-        name  = name,
-        pack  = pack,
-        flags = flags,
-        uri   = uri,
-        opt   = opt,
-        dir   = dir,
-        on    = data.on,
-        pat   = data.pat,
-        cfg   = data.cfg
+        name    = name,
+        pack    = pack,
+        flags   = flags,
+        uri     = uri,
+        opt     = opt,
+        dir     = dir,
+        on      = data.on,
+        pat     = data.pat,
+        cfg     = data.cfg,
+        _loaded = false
     }
 end
 
@@ -500,9 +502,13 @@ local function list_plugins()
             prev_pack = plugin.pack
         end
 
-        local msg = (is_optsynced(plugin) ~= -1) and "OK!" or "missing!"
+        local is_installed = is_optsynced(plugin) ~= -1
         local id = plugin.pack .. ":" .. plugin.name
-        log_to(id, msg)
+        if not is_installed then
+            log_to(id, "missing!")
+        else
+            log_to(id, plugin._loaded and "loaded" or "installed, not loaded")
+        end
    end
 end
 
@@ -530,7 +536,7 @@ vim.cmd([[
     command -nargs=0 JetClean   lua Jet.clean()
     command -nargs=0 JetList    lua Jet.list()
     command -nargs=1 JetAdd     lua Jet.add(<f-args>)
-    command -nargs=0 JetLog     edit Jet.log_file
+    command -nargs=0 JetLog     lua vim.cmd("edit " .. Jet.log_file)
 ]])
 
 Jet = {
