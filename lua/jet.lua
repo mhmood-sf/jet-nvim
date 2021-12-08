@@ -8,7 +8,7 @@ local registry = {}
 -- Path to pack dir.
 -- Note that jet_packpath must also be added
 -- to vim's packpath variable by the user.
-local pack_path = (vim.g.jet_packpath or fn.stdpath('config')) .. "/pack/"
+local pack_path = (vim.g.jet_packpath or fn.stdpath("config")) .. "/pack/"
 
 --- UTIL FUNCTIONS
 
@@ -126,6 +126,7 @@ end
 
 -- Remember line numbers for logs.
 local log_lines = {}
+local log_file = fn.tempname()
 
 -- Logs to a fixed line, based on it's id.
 local function log_to(id, text)
@@ -147,6 +148,7 @@ local function log_to(id, text)
     end
 
     vim.opt_local.modifiable = false
+    fn.writefile({str}, log_file, "a")
 end
 
 -- Clear previous contents of Jet buf
@@ -253,11 +255,10 @@ end
 
 -- Initializes plugin's lazy loading autocmd.
 local function init_lazy_load(plugin)
-    if plugin.opt and plugin.on then
+    if plugin.on then
         local grp = "JetLazyLoad"
         local evt = table.concat(plugin.on, ",")
-        local lst = plugin.pat and table.concat(plugin.pat, ",")
-        local pat = lst or "*"
+        local pat = plugin.pat and table.concat(plugin.pat, ",") or "*"
 
         local subcmd = "lua " .. "Jet.load('" .. plugin.name .. "')"
         local cmdlist = {"au", grp, evt, pat, "++once", subcmd}
@@ -274,8 +275,8 @@ end
 local function init_plugin(pack, data)
     local name  = get_plugin_name(data)
     local flags = get_plugin_flags(data)
-    local uri   = (type(data) == 'string') and data or data.uri
-    local opt   = (type(data.opt) == 'nil') and false or data.opt
+    local uri   = (type(data) == "string") and data or data.uri
+    local opt   = (type(data.opt) == "nil") and false or data.opt
     local dir   = pack_path .. pack .. (opt and "/opt/" or "/start/") .. name
 
     return {
@@ -297,7 +298,7 @@ local function init_pack(pack)
     local register_pack_plugins = function(list)
         for _, data in ipairs(list) do
             local data_t = type(data)
-            if data_t ~= 'string' and data_t ~= 'table' then
+            if data_t ~= "string" and data_t ~= "table" then
                 echo_err(11)
                 return
             elseif data_t == "table" and data.uri == nil then
@@ -327,7 +328,7 @@ end
 local spawned_handles = {}
 
 -- Spawn git process to update a plugin.
-local function git_spawn(subcmd, plugin)
+local function git_spawn(subcmd, plugin, hook)
     local logid = plugin.pack .. ":" .. plugin.name
     -- To read command output.
     local stdout = vim.loop.new_pipe(false)
@@ -359,10 +360,16 @@ local function git_spawn(subcmd, plugin)
     }
 
     local on_exit = vim.schedule_wrap(function ()
-        spawned_handles[plugin.uri]:close()
+        local handle = spawned_handles[plugin.uri]
+        if not handle:is_closing() then handle:close() end
         stdout:close()
         stderr:close()
-        log_to(logid, "Finished.")
+        if code == 0 then
+            log_to(logid, "Finished.")
+            if hook then hook() end
+        else
+            log_to(logid, "Failed. Check `:JetLog` for more info.")
+        end
     end)
 
     -- Run command and store handle to close later.
@@ -387,7 +394,7 @@ local function install_plugins(pack)
     local installed = 0
     for _, plugin in ipairs(registry) do
         if not pack or plugin.pack == pack then
-            if not is_installed(plugin) then
+            if is_optsynced(plugin) == -1 then
                 git_spawn("clone", plugin)
                 installed = installed + 1
             end
@@ -493,7 +500,7 @@ local function list_plugins()
             prev_pack = plugin.pack
         end
 
-        local msg = is_installed(plugin) and "OK!" or "missing!"
+        local msg = (is_optsynced(plugin) ~= -1) and "OK!" or "missing!"
         local id = plugin.pack .. ":" .. plugin.name
         log_to(id, msg)
    end
@@ -523,6 +530,7 @@ vim.cmd([[
     command -nargs=0 JetClean   lua Jet.clean()
     command -nargs=0 JetList    lua Jet.list()
     command -nargs=1 JetAdd     lua Jet.add(<f-args>)
+    command -nargs=0 JetLog     edit Jet.log_file
 ]])
 
 Jet = {
@@ -533,6 +541,7 @@ Jet = {
     clean    = clean_plugins,
     list     = list_plugins,
     add      = add_pack,
-    registry = registry
+    registry = registry,
+    log_file = log_file
 }
 
