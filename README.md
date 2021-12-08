@@ -1,6 +1,6 @@
 # Jet
 
-Jet is a simple, single-file (~500LOC) plugin manager for neovim. The aim is to
+Jet is a simple, single-file plugin manager for neovim. The aim is to
 find a middleground between the lightweight [paq-nvim](https://github.com/savq/paq-nvim)
 and the heavyweight [packer.nvim](https://github.com/wbthomason/packer.nvim).
 
