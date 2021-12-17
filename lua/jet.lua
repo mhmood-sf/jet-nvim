@@ -104,12 +104,9 @@ end
 local function log(...)
     open_jet_buf()
     vim.opt_local.modifiable = true
-
-    local args = {...}
-    for _, val in ipairs(args) do
+    for _, val in ipairs({ ... }) do
         fn.append(fn.line("$"), val)
     end
-
     vim.opt_local.modifiable = false
 end
 
@@ -123,8 +120,8 @@ local function log_to(id, text)
     vim.opt_local.modifiable = true
 
     local str = "<" .. id .. "> " .. text
-
     local line_nr = log_lines[id]
+
     if line_nr == nil then
         -- Get the last line of the buffer.
         line_nr = fn.line("$")
@@ -144,11 +141,9 @@ end
 -- and reset log_lines.
 local function clear_jet_buf()
     open_jet_buf()
-
     vim.opt_local.modifiable = true
     fn.deletebufline("Jet", 2, fn.line("$"))
     vim.opt_local.modifiable = false
-
     log_lines = {}
 end
 
@@ -295,17 +290,15 @@ local function init_pack(pack)
             local data_t = type(data)
             -- Ensure pack entry is a table or string.
             if data_t ~= "string" and data_t ~= "table" then
-                echo_err(11)
-                return
+                return echo_err(11)
             -- Ensure a uri is available.
             elseif data_t == "table" and data.uri == nil then
-                echo_err(12)
-                return
+                return echo_err(12)
             else
                 local plugin = init_plugin(pack, data)
                 -- Make sure there's no duplicate names.
                 if find_plugin(plugin.name) ~= nil then
-                    echo_err(13)
+                    return echo_err(13)
                 else
                     table.insert(registry, plugin)
                     -- Optsync all plugins on startup.
