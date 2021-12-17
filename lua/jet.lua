@@ -35,9 +35,10 @@ end
 
 -- Jet errors.
 local errs = {
-    [11] = "entries must be either strings or tables.",
+    [11] = "config entries must be either strings or tables.",
     [12] = "'uri' field is required for all table entries.",
-    [20] = "'git' not found. Some commands may not work."
+    [13] = "duplicate names found! Please ensure plugins are named uniquely.",
+    [20] = "'git' executable not found. Some commands may fail."
 }
 
 -- Get formatted error string from error code.
@@ -289,30 +290,36 @@ end
 -- Returns a function that takes a list of plugin configs,
 -- adds them to the registry and initializes them.
 local function init_pack(pack)
-    local register_pack_plugins = function(list)
+    return function(list)
         for _, data in ipairs(list) do
             local data_t = type(data)
+            -- Ensure pack entry is a table or string.
             if data_t ~= "string" and data_t ~= "table" then
                 echo_err(11)
                 return
+            -- Ensure a uri is available.
             elseif data_t == "table" and data.uri == nil then
                 echo_err(12)
                 return
             else
                 local plugin = init_plugin(pack, data)
-                table.insert(registry, plugin)
-                local optsynced = optsync_plugin(plugin)
+                -- Make sure there's no duplicate names.
+                if find_plugin(plugin.name) ~= nil then
+                    echo_err(13)
+                else
+                    table.insert(registry, plugin)
+                    -- Optsync all plugins on startup.
+                    local optsynced = optsync_plugin(plugin)
 
-                if plugin.opt then
-                    init_lazy_load(plugin)
-                elseif optsynced then
-                    load_plugin(plugin)
+                    if plugin.opt then
+                        init_lazy_load(plugin)
+                    elseif optsynced then
+                        load_plugin(plugin)
+                    end
                 end
             end
         end
     end
-
-    return register_pack_plugins
 end
 
 
