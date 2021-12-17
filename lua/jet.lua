@@ -450,22 +450,23 @@ end
 
 --- CLEAN PLUGINS
 
--- Cleans unused plugins from the given `dir`.
--- Returns number of plugins removed.
-local function clean_dir(dir)
-    local count = 0
+-- Returns list of dirs for unused plugins in `dir`.
+local function get_unused_dirs(dir)
+    local unused = {}
+    -- Make sure the dir exists first.
     if fn.isdirectory(dir) ~= 0 then
-        local plugin_dirs = fn.readdir(dir)
-        for _, plugin in ipairs(plugin_dirs) do
-            local found = find_plugin(plugin)
-            if not found then
-                log("Removing unused plugin: <" .. plugin .. ">")
-                fn.delete(dir .. "/" .. plugin)
-                count = count + 1
+        -- Get all plugins installed on filesystem.
+        local fs_plugins = fn.readdir(dir)
+        for _, fs_plugin in ipairs(fs_plugins) do
+            -- Check if they are in the registry.
+            local found = find_plugin(fs_plugin)
+            -- If not, then append their path to unused plugins list.
+            if found == nil then
+                table.insert(unused, dir .. "/" .. fs_plugin)
             end
         end
     end
-    return count
+    return unused
 end
 
 -- Cleans unused packs/plugins from pack_path
@@ -473,40 +474,45 @@ local function clean_plugins()
     clear_jet_buf()
     log("", "Clean", "-----")
 
-    local packs = {}
-    -- Set pack name as keys to handle duplicates
-    -- Also optsync plugins just in case.
-    for _, plugin in ipairs(registry) do
-        packs[plugin.pack] = plugin.pack
-        optsync_plugin(plugin)
+    -- List of dirs for unused plugins.
+    local unused_plugins = {}
+    -- Get packs installed on filesystem.
+    local fs_packs = fn.readdir(pack_path)
+
+    -- First get dirs for unused plugins.
+    for _, fs_pack in ipairs(fs_packs) do
+        -- Check both opt and start dirs.
+        local optpath = get_path("opt", fs_pack)
+        local startpath = get_path("start", fs_pack)
+        vim.list_extend(unused_plugins, get_unused_dirs(optpath))
+        vim.list_extend(unused_plugins, get_unused_dirs(startpath))
     end
 
-    local pack_count = 0
-    local plugin_count = 0
-    local pack_dirs = fn.readdir(pack_path)
-    for _, pack_dir in ipairs(pack_dirs) do
-        if packs[pack_dir] then
-            local optpath = get_path("opt", pack_dir)
-            local startpath = get_path("start", pack_dir)
-            plugin_count = plugin_count + clean_dir(optpath)
-            plugin_count = plugin_count + clean_dir(startpath)
-        else
-            log("Removing unused pack: <" .. pack_dir .. ">")
-            fn.delete(pack_path .. pack_dir, "rf")
-            pack_count = pack_count + 1
+    -- Print unused plugins for user.
+    log("", "Unused plugins found:", "")
+    for _, unused_plugin in ipairs(unused_plugins) do
+        log(unused_plugin)
+    end
+
+    -- Confirm before proceeding.
+    local response = fn.input("Are you sure you wish to delete all? [y/n]: ")
+
+    if vim.startswith(fn.tolower(response), "y") then
+        for _, unused_plugin in ipairs(unused_plugins) do
+            fn.delete(unused_plugin, "rf")
         end
+
+        if #unused_plugins > 0 then
+            log("", "Removed " .. #unused_plugins .. " unused plugin(s).")
+        else
+            log("", "No unused plugins to remove.")
+        end
+    else
+        log("", "Cancelled.")
     end
 
-    if pack_count > 0 then
-        log("", "Removed " .. pack_count .. " unused pack(s).")
-    else
-        log("", "No unused packs to remove.")
-    end
-    if plugin_count > 0 then
-        log("Removed " .. plugin_count .. " unused plugin(s).")
-    else
-        log("No unused plugins to remove.")
-    end
+    -- Remove confirmation prompt from command line.
+    vim.cmd "redraw"
 end
 
 
