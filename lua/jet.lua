@@ -246,9 +246,11 @@ end
 -- Loads a specific plugin and runs it's cfg function.
 local function load_plugin(name)
     local plugin = find_plugin(name)
-    vim.cmd("packadd " .. name)
-    plugin._loaded = true
-    if plugin.cfg then plugin.cfg() end
+    if plugin then
+        vim.cmd("packadd " .. name)
+        plugin._loaded = true
+        if plugin.cfg then plugin.cfg() end
+    end
 end
 
 
