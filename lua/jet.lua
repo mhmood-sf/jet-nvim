@@ -244,12 +244,14 @@ local function get_plugin_flags(plugin)
 end
 
 -- Loads a specific plugin and runs it's cfg function.
-local function load_plugin(name)
-    local plugin = find_plugin(name)
-    if plugin then
-        vim.cmd("packadd " .. name)
-        plugin._loaded = true
-        if plugin.cfg then plugin.cfg() end
+-- `plugin` can be plugin name or object.
+local function load_plugin(plugin)
+    local is_name = type(plugin) == "string"
+    local plugin_data = is_name and find_plugin(plugin) or plugin
+    if plugin_data then
+        vim.cmd("packadd " .. plugin_data.name)
+        plugin_data._loaded = true
+        if plugin_data.cfg then plugin_data.cfg() end
     end
 end
 
@@ -316,7 +318,7 @@ local function init_pack(pack)
                 if plugin.opt then
                     init_lazy_load(plugin)
                 elseif optsynced then
-                    load_plugin(plugin.name)
+                    load_plugin(plugin)
                 end
             end
         end
