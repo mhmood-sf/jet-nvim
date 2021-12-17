@@ -92,7 +92,7 @@ local function open_jet_buf()
         return
     elseif winnr < 0 then
         -- First, store if the buffer already existed.
-        local existed = fn.bufnr("Jet") > 0
+        local existed = fn.bufnr("Jet") ~= -1
         -- Get the bufnr, creating it if it didn't already exist.
         local bufnr = fn.bufnr("Jet", 1)
         -- Open a window and load the buffer.
@@ -363,11 +363,11 @@ local function git_spawn(subcmd, plugin, hook)
         stdio = {nil, stdout, stderr}
     }
 
-    local on_exit = vim.schedule_wrap(function ()
+    local on_exit = vim.schedule_wrap(function (code)
         local handle = spawned_handles[plugin.uri]
         if not handle:is_closing() then handle:close() end
-        stdout:close()
-        stderr:close()
+        stdout:close(); stderr:close()
+
         if code == 0 then
             log_to(logid, "Finished.")
             if hook then hook() end
