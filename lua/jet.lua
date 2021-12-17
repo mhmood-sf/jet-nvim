@@ -428,6 +428,31 @@ local function update_plugins(pack)
 end
 
 
+-- PLUGIN STATUS --------------------------------------------------------------
+
+-- Log which plugins are installed/missing.
+local function plugin_status()
+    clear_jet_buf()
+    log("", "Plugins", "-------")
+
+    local prev_pack = ""
+    for _, plugin in ipairs(registry) do
+        if plugin.pack ~= prev_pack then
+            log("")
+            prev_pack = plugin.pack
+        end
+
+        local is_installed = is_optsynced(plugin) ~= -1
+        local id = plugin.pack .. ":" .. plugin.name
+        if not is_installed then
+            log_to(id, "missing!")
+        else
+            log_to(id, plugin._loaded and "loaded" or "installed, not loaded")
+        end
+   end
+end
+
+
 --- CLEAN PLUGINS
 
 -- Cleans unused plugins from the given `dir`.
@@ -439,7 +464,7 @@ local function clean_dir(dir)
         for _, plugin in ipairs(plugin_dirs) do
             local found = find_plugin(plugin)
             if not found then
-                log("Removing unused plugin: " .. plugin)
+                log("Removing unused plugin: <" .. plugin .. ">")
                 fn.delete(dir .. "/" .. plugin)
                 count = count + 1
             end
@@ -471,85 +496,46 @@ local function clean_plugins()
             plugin_count = plugin_count + clean_dir(optpath)
             plugin_count = plugin_count + clean_dir(startpath)
         else
-            log("Removing unused pack: " .. pack_dir)
+            log("Removing unused pack: <" .. pack_dir .. ">")
             fn.delete(pack_path .. pack_dir, "rf")
             pack_count = pack_count + 1
         end
     end
 
     if pack_count > 0 then
-        log("", "Removed " .. pack_count .. " unused packs.")
+        log("", "Removed " .. pack_count .. " unused pack(s).")
     else
         log("", "No unused packs to remove.")
     end
     if plugin_count > 0 then
-        log("", "Removed " .. plugin_count .. " unused plugins.")
+        log("Removed " .. plugin_count .. " unused plugin(s).")
     else
-        log("", "No unused plugins to remove.")
+        log("No unused plugins to remove.")
     end
 end
 
-
--- LIST PLUGINS ---------------------------------------------------------------
-
--- Log which plugins are installed/missing.
-local function list_plugins()
-    clear_jet_buf()
-    log("", "Plugins", "-------")
-
-    local prev_pack = ""
-    for _, plugin in ipairs(registry) do
-        if plugin.pack ~= prev_pack then
-            log("")
-            prev_pack = plugin.pack
-        end
-
-        local is_installed = is_optsynced(plugin) ~= -1
-        local id = plugin.pack .. ":" .. plugin.name
-        if not is_installed then
-            log_to(id, "missing!")
-        else
-            log_to(id, plugin._loaded and "loaded" or "installed, not loaded")
-        end
-   end
-end
-
-
--- ADD PACK -------------------------------------------------------------------
-
--- Immediately loads all plugins for the
--- given `pack`.
-local function add_pack(pack)
-    for _, plugin in ipairs(registry) do
-        if plugin.pack == pack then
-            vim.cmd("packadd " .. plugin.name)
-            if plugin.cfg then plugin.cfg() end
-        end
-    end
-end
 
 -- INITIALIZE -----------------------------------------------------------------
 
 if fn.executable("git") ~= 1 then echo_err(20) end
 
 vim.cmd([[
-    command -nargs=? JetInstall lua Jet.install(<f-args>)
-    command -nargs=? JetUpdate  lua Jet.update(<f-args>)
+    command -nargs=0 JetLog     lua vim.cmd("split " .. Jet.log_file)
+    command -nargs=1 JetAdd     lua Jet.load(<f-args>)
     command -nargs=0 JetClean   lua Jet.clean()
-    command -nargs=0 JetList    lua Jet.list()
-    command -nargs=1 JetAdd     lua Jet.add(<f-args>)
-    command -nargs=0 JetLog     lua vim.cmd("edit " .. Jet.log_file)
+    command -nargs=0 JetStatus  lua Jet.status()
+    command -nargs=? JetUpdate  lua Jet.update(<f-args>)
+    command -nargs=? JetInstall lua Jet.install(<f-args>)
 ]])
 
 Jet = {
+    log_file = log_file,
+    registry = registry,
     pack     = init_pack,
     load     = load_plugin,
-    install  = install_plugins,
-    update   = update_plugins,
     clean    = clean_plugins,
-    list     = list_plugins,
-    add      = add_pack,
-    registry = registry,
-    log_file = log_file
+    status   = plugin_status,
+    update   = update_plugins,
+    install  = install_plugins,
 }
 
