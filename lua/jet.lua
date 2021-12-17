@@ -455,7 +455,7 @@ local function get_unused_dirs(dir)
             local found = find_plugin(fs_plugin)
             -- If not, then append their path to unused plugins list.
             if found == nil then
-                table.insert(unused, dir .. "/" .. fs_plugin)
+                table.insert(unused, dir .. fs_plugin)
             end
         end
     end
