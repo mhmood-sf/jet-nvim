@@ -394,7 +394,7 @@ local function install_plugins(pack)
 
     local installed = 0
     for _, plugin in ipairs(registry) do
-        if not pack or plugin.pack == pack then
+        if pack == nil or plugin.pack == pack then
             if is_optsynced(plugin) == -1 then
                 git_spawn("clone", plugin, function() load_plugin(plugin) end)
                 installed = installed + 1
