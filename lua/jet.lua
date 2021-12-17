@@ -12,18 +12,6 @@ local pack_path = (vim.g.jet_packpath or fn.stdpath("config")) .. "/pack/"
 
 --- UTIL FUNCTIONS
 
--- Joins two lists together.
-local function list_join(a, b)
-    local joint = {}
-    for _, v in ipairs(a) do
-        joint[#joint + 1] = v
-    end
-    for _, v in ipairs(b) do
-        joint[#joint + 1] = v
-    end
-    return joint
-end
-
 -- Returns first item that evalutes
 -- to true when `f` is applied.
 local function list_find(list, f)
@@ -359,7 +347,7 @@ local function git_spawn(subcmd, plugin, hook)
     -- Prepare command.
     local cmdargs = { subcmd, plugin.uri, plugin.dir, "--progress" }
     local opts = {
-        args = list_join(cmdargs, plugin.flags),
+        args = vim.list_extend(cmdargs, plugin.flags),
         detached = true,
         hide = true,
         stdio = {nil, stdout, stderr}
