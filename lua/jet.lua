@@ -399,15 +399,13 @@ local function install_plugins(pack)
     for _, plugin in ipairs(registry) do
         if not pack or plugin.pack == pack then
             if is_optsynced(plugin) == -1 then
-                git_spawn("clone", plugin)
+                git_spawn("clone", plugin, function() load_plugin(plugin) end)
                 installed = installed + 1
             end
         end
     end
 
-    if installed == 0 then
-        log("Nothing to install!")
-    end
+    if installed == 0 then log("Nothing to install!") end
 end
 
 
