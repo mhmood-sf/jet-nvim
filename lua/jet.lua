@@ -468,7 +468,7 @@ local function clean_plugins()
     log("", "Clean", "-----")
 
     -- List of dirs for unused plugins.
-    local unused_plugins = {}
+    local unused = {}
     -- Get packs installed on filesystem.
     local fs_packs = fn.readdir(pack_path)
 
@@ -477,35 +477,50 @@ local function clean_plugins()
         -- Check both opt and start dirs.
         local optpath = get_path("opt", fs_pack)
         local startpath = get_path("start", fs_pack)
-        vim.list_extend(unused_plugins, get_unused_dirs(optpath))
-        vim.list_extend(unused_plugins, get_unused_dirs(startpath))
+        vim.list_extend(unused, get_unused_dirs(optpath))
+        vim.list_extend(unused, get_unused_dirs(startpath))
     end
 
-    -- Print unused plugins for user.
+    -- Finish if no unused plugins found.
+    if #unused == 0 then
+        log("", "No unused plugins found.")
+        return
+    end
+
+    -- Log unused plugin paths.
     log("", "Unused plugins found:", "")
-    for _, unused_plugin in ipairs(unused_plugins) do
-        log(unused_plugin)
-    end
+    for _, path in ipairs(unused) do log(path) end
 
-    -- Confirm before proceeding.
-    local response = fn.input("Are you sure you wish to delete all? [y/n]: ")
+    -- Use prompt buffer to confirm before proceeding.
+    vim.bo.buftype = "prompt"
+    -- Allow modifying buffer for prompt response.
+    vim.opt_local.modifiable = true
+    -- Set prompt and start insert mode for user's response.
+    fn.prompt_setprompt(fn.bufnr(), "Delete all? [y/n]: ")
+    fn.execute("startinsert")
 
-    if vim.startswith(fn.tolower(response), "y") then
-        for _, unused_plugin in ipairs(unused_plugins) do
-            fn.delete(unused_plugin, "rf")
-        end
-
-        if #unused_plugins > 0 then
-            log("", "Removed " .. #unused_plugins .. " unused plugin(s).")
+    -- Callback after user enters text to the prompt.
+    fn.prompt_setcallback(fn.bufnr(), function(txt)
+        -- Anything starting with y is taken as yes.
+        if vim.startswith(fn.tolower(txt), "y") then
+            for _, path in ipairs(unused) do fn.delete(path, "rf") end
+            log("Removed " .. #unused .. " unused plugin(s).")
         else
-            log("", "No unused plugins to remove.")
+            log("Cancelled.")
         end
-    else
-        log("", "Cancelled.")
-    end
+        -- Remove callback and reset buffer.
+        fn.prompt_setcallback(fn.bufnr(), "")
+        vim.bo.buftype = "nofile"
+        vim.opt_local.modifiable = false
+    end)
 
-    -- Remove confirmation prompt from command line.
-    vim.cmd "redraw"
+    -- In case input is interrupted.
+    fn.prompt_setinterrupt(fn.bufnr(), function()
+        log("Cancelled.")
+        fn.prompt_setcallback(fn.bufnr(), "")
+        vim.bo.buftype = "nofile"
+        vim.opt_local.modifiable = false
+    end)
 end
 
 
