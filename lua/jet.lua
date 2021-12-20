@@ -64,8 +64,7 @@ end
 
 --- JET BUFFER
 
--- Sets window/buffer options
--- and header for the jet buffer.
+-- Sets window/buffer options and header.
 local function prep_jet_buf()
     vim.cmd("setfiletype Jet")
 
@@ -80,8 +79,8 @@ local function prep_jet_buf()
     fn.setline(2, "")
 end
 
--- Opens a custom buffer for Jet.
-local function open_jet_buf()
+-- Opens window for custom Jet buffer.
+local function open_jet_win()
     local winnr = fn.bufwinnr("Jet")
 
     -- Return if buffer window is already open.
@@ -104,13 +103,9 @@ local function open_jet_buf()
     end
 end
 
-
---- LOGGING
-
--- Logs to the custom Jet buffer. Takes
--- multiple args, each logged to a new line.
-local function log(...)
-    open_jet_buf()
+-- Writes each arg as a line to the custom buffer.
+local function jet_buf_write(...)
+    open_jet_win()
     vim.opt_local.modifiable = true
     for _, val in ipairs({ ... }) do
         fn.append(fn.line("$"), val)
@@ -119,40 +114,37 @@ local function log(...)
 end
 
 -- Remember line numbers for logs.
-local log_lines = {}
-local log_file = fn.tempname()
+local line_ids = {}
 
 -- Logs to a fixed line, based on it's id.
-local function log_to(id, text)
-    open_jet_buf()
+local function jet_buf_write_to(id, text)
+    open_jet_win()
     vim.opt_local.modifiable = true
 
     local str = "<" .. id .. "> " .. text
-    local line_nr = log_lines[id]
+    local line_nr = line_ids[id]
 
     if line_nr == nil then
         -- Get the last line of the buffer.
         line_nr = fn.line("$")
-        -- Store the line nr + 1, since append
+        -- Store the line_nr + 1, since append
         -- writes to the line below.
-        log_lines[id] = line_nr + 1
+        line_ids[id] = line_nr + 1
         fn.append(line_nr, str)
     else
         fn.setline(line_nr, str)
     end
 
     vim.opt_local.modifiable = false
-    fn.writefile({str}, log_file, "a")
 end
 
--- Clear previous contents of Jet buf
--- and reset log_lines.
+-- Clear contents of custom buffer and reset line_ids.
 local function clear_jet_buf()
-    open_jet_buf()
+    open_jet_win()
     vim.opt_local.modifiable = true
     fn.deletebufline("Jet", 2, fn.line("$"))
     vim.opt_local.modifiable = false
-    log_lines = {}
+    line_ids = {}
 end
 
 
@@ -348,14 +340,15 @@ local function git_spawn(subcmd, plugin, hook)
     -- Wrap so that Nvim API can be called inside loop.
     local on_read = vim.schedule_wrap(function (err, data)
         if err then
-            log_to(logid, err)
+            jet_buf_write_to(logid, err)
         elseif data then
             -- Ignore whitespace/newlines.
             local lines = string.gmatch(data, "%s*([^\r\n]*)%s*")
             for line in lines do
                 -- Don't log empty lines.
                 if string.match(line, "[^%s]") then
-                    log_to(logid, line)
+                    jet_buf_write_to(logid, line)
+                    log(logid .. " " .. line)
                 end
             end
         end
@@ -376,10 +369,12 @@ local function git_spawn(subcmd, plugin, hook)
         stdout:close(); stderr:close()
 
         if code == 0 then
-            log_to(logid, "Finished.")
+            log(logid .. " Finished.")
+            jet_buf_write_to(logid, "Finished.")
             if hook then hook() end
         else
-            log_to(logid, "Failed. Check `:JetLog` for more info.")
+            log(logid .. " Failed.")
+            jet_buf_write_to(logid, "Failed. Check `:JetLog` for more info.")
         end
     end)
 
@@ -400,7 +395,7 @@ end
 -- plugins from that pack will be installed.
 local function install_plugins(pack)
     clear_jet_buf()
-    log("", "Install", "-------")
+    jet_buf_write("", "Install", "-------")
 
     local installed = 0
     for _, plugin in ipairs(registry) do
@@ -412,7 +407,7 @@ local function install_plugins(pack)
         end
     end
 
-    if installed == 0 then log("Nothing to install!") end
+    if installed == 0 then jet_buf_write("Nothing to install!") end
 end
 
 
@@ -423,7 +418,7 @@ end
 -- from that pack will be installed.
 local function update_plugins(pack)
     clear_jet_buf()
-    log("", "Update", "------")
+    jet_buf_write("", "Update", "------")
 
     for _, plugin in ipairs(registry) do
         if not pack or plugin.pack == pack then
@@ -438,21 +433,22 @@ end
 -- Log which plugins are installed/missing.
 local function plugin_status()
     clear_jet_buf()
-    log("", "Plugins", "-------")
+    jet_buf_write("", "Plugins", "-------")
 
     local prev_pack = ""
     for _, plugin in ipairs(registry) do
         if plugin.pack ~= prev_pack then
-            log("")
+            jet_buf_write("")
             prev_pack = plugin.pack
         end
 
         local is_installed = is_optsynced(plugin) ~= -1
         local id = plugin.pack .. ":" .. plugin.name
         if not is_installed then
-            log_to(id, "missing!")
+            jet_buf_write_to(id, "missing!")
         else
-            log_to(id, plugin._loaded and "loaded" or "installed, not loaded")
+            local msg = plugin._loaded and "loaded" or "installed, not loaded"
+            jet_buf_write_to(id, msg)
         end
    end
 end
@@ -479,15 +475,15 @@ local function get_unused_dirs(dir)
     return unused
 end
 
--- Cleans unused packs/plugins from pack_path
+-- Cleans unused packs/plugins from pack_dir
 local function clean_plugins()
     clear_jet_buf()
-    log("", "Clean", "-----")
+    jet_buf_write("", "Clean", "-----")
 
     -- List of dirs for unused plugins.
     local unused = {}
     -- Get packs installed on filesystem.
-    local fs_packs = fn.readdir(pack_path)
+    local fs_packs = fn.readdir(pack_dir)
 
     -- First get dirs for unused plugins.
     for _, fs_pack in ipairs(fs_packs) do
@@ -500,13 +496,13 @@ local function clean_plugins()
 
     -- Finish if no unused plugins found.
     if #unused == 0 then
-        log("", "No unused plugins found.")
+        jet_buf_write("No unused plugins found.")
         return
     end
 
     -- Log unused plugin paths.
-    log("", "Unused plugins found:", "")
-    for _, path in ipairs(unused) do log(path) end
+    jet_buf_write("", "Unused plugins found:", "")
+    for _, path in ipairs(unused) do jet_buf_write(path) end
 
     -- Use prompt buffer to confirm before proceeding.
     vim.bo.buftype = "prompt"
@@ -533,7 +529,8 @@ local function clean_plugins()
 
     -- In case input is interrupted.
     fn.prompt_setinterrupt(fn.bufnr(), function()
-        log("Cancelled.")
+        log("JetClean prompt interrupted.")
+        jet_buf_write("Cancelled.")
         fn.prompt_setcallback(fn.bufnr(), "")
         vim.bo.buftype = "nofile"
         vim.opt_local.modifiable = false
