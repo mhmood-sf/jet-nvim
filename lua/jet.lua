@@ -28,11 +28,11 @@ end
 
 -- Path to `pack`'s start/opt dir.
 local function get_path(opt, pack)
-    return pack_path .. pack .. "/" .. opt .. "/"
+    return pack_dir .. pack .. "/" .. opt .. "/"
 end
 
 
---- ERROR HANDLING
+--- ERROR HANDLING & LOGGING
 
 -- Jet errors.
 local errs = {
