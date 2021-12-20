@@ -158,12 +158,14 @@ end
 -- optsynced. This function returns 1 for optsynced, 0 for
 -- installed, and -1 otherwise.
 local function is_optsynced(plugin)
+    -- Check it's actual directory.
     local found_synced = io.open(plugin.dir .. "/.git/HEAD", "r")
     if found_synced then
         io.close(found_synced)
         return 1
     end
 
+    -- Check the other directory.
     local alt_dir  = plugin.opt and "start" or "opt"
     local alt_path = get_path(alt_dir, plugin.pack) .. plugin.name
     local found_installed = io.open(alt_path .. "/.git/HEAD", "r")
@@ -517,9 +519,11 @@ local function clean_plugins()
         -- Anything starting with y is taken as yes.
         if vim.startswith(fn.tolower(txt), "y") then
             for _, path in ipairs(unused) do fn.delete(path, "rf") end
-            log("Removed " .. #unused .. " unused plugin(s).")
+            log("Removed " .. #unused .. "unused plugin(s).")
+            jet_buf_write("Removed " .. #unused .. " unused plugin(s).")
         else
-            log("Cancelled.")
+            log("JetClean command cancelled.")
+            jet_buf_write("Cancelled.")
         end
         -- Remove callback and reset buffer.
         fn.prompt_setcallback(fn.bufnr(), "")
