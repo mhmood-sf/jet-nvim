@@ -544,18 +544,20 @@ end
 
 -- INITIALIZE -----------------------------------------------------------------
 
+log("Initializing Jet.")
 if fn.executable("git") ~= 1 then echo_err(20) end
 
 vim.cmd([[
-    command -nargs=0 JetLog     lua vim.cmd("split " .. Jet.log_file)
-    command -nargs=1 JetAdd     lua Jet.load(<f-args>)
-    command -nargs=0 JetClean   lua Jet.clean()
-    command -nargs=0 JetStatus  lua Jet.status()
-    command -nargs=? JetUpdate  lua Jet.update(<f-args>)
-    command -nargs=? JetInstall lua Jet.install(<f-args>)
+    command -nargs=0 JetLog lua vim.cmd("vsplit " .. require'jet'.log_file)
+    command -nargs=1 JetAdd lua require'jet'.load(<f-args>)
+    command -nargs=0 JetClean lua require'jet'.clean()
+    command -nargs=0 JetStatus lua require'jet'.status()
+    command -nargs=? JetUpdate lua require'jet'.update(<f-args>)
+    command -nargs=? JetInstall lua require'jet'.install(<f-args>)
+    command -nargs=0 JetWipeLogs lua vim.fn.writefile({}, require'jet'.log_file)
 ]])
 
-Jet = {
+return {
     log_file = log_file,
     registry = registry,
     pack     = init_pack,
