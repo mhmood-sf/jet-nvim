@@ -42,6 +42,12 @@ local errs = {
     [20] = "'git' executable not found. Some commands may fail."
 }
 
+-- Write `str` to log file along with date & time.
+local function log(str)
+    local s = fn.strftime("[%Y-%b-%d | %H:%M] ") .. str
+    fn.writefile({s}, log_file, "a")
+end
+
 -- Get formatted error string from error code.
 local function get_err_str(code)
     return "Jet E" .. code .. ": " .. errs[code]
@@ -49,6 +55,7 @@ end
 
 -- Logs error message with error highlighting.
 local function echo_err(code)
+    log(get_err_str(code))
     vim.cmd("echohl Error")
     vim.cmd("echom '" .. get_err_str(code) .. "'")
     vim.cmd("echohl None")
@@ -180,6 +187,7 @@ end
 -- directory. Returns true if synced successfully,
 -- otherwise false (meaning plugin is not installed).
 local function optsync_plugin(plugin)
+    log("Optsyncing plugin: " .. plugin.name)
     local sync_status = is_optsynced(plugin)
 
     if sync_status == 1 then
@@ -234,6 +242,7 @@ local function load_plugin(plugin)
     local is_name = type(plugin) == "string"
     local plugin_data = is_name and find_plugin(plugin) or plugin
     if plugin_data then
+        log("Loading plugin: " .. plugin.name)
         vim.cmd("packadd " .. plugin_data.name)
         plugin_data._loaded = true
         if plugin_data.cfg then plugin_data.cfg() end
@@ -250,10 +259,13 @@ local function init_lazy_load(plugin)
         local evt = table.concat(plugin.on, ",")
         local pat = plugin.pat and table.concat(plugin.pat, ",") or "*"
 
-        local subcmd = "lua " .. "Jet.load('" .. plugin.name .. "')"
+        local subcmd = "lua require'jet'.load('" .. plugin.name .. "')"
         local cmdlist = {"au", grp, evt, pat, "++once", subcmd}
+        local autocmd = table.concat(cmdlist, " ")
+
+        log("Registering autocmd: " .. autocmd)
         vim.cmd("augroup JetLazyLoad")
-        vim.cmd(table.concat(cmdlist, " "))
+        vim.cmd(autocmd)
     end
 end
 
@@ -267,8 +279,9 @@ local function init_plugin(pack, data)
     local flags = get_plugin_flags(data)
     local uri   = (type(data) == "string") and data or data.uri
     local opt   = (type(data.opt) == "nil") and false or data.opt
-    local dir   = pack_path .. pack .. (opt and "/opt/" or "/start/") .. name
+    local dir   = pack_dir .. pack .. (opt and "/opt/" or "/start/") .. name
 
+    log("Initialized plugin data for: " .. name)
     return {
         name    = name,
         pack    = pack,
@@ -287,6 +300,7 @@ end
 -- adds them to the registry and initializes them.
 local function init_pack(pack)
     return function(list)
+        log("Initializing pack: " .. pack)
         for _, data in ipairs(list) do
             local data_t = type(data)
             -- Ensure pack entry is a table or string.
@@ -325,6 +339,8 @@ local spawned_handles = {}
 -- Spawn git process to update a plugin.
 local function git_spawn(subcmd, plugin, hook)
     local logid = plugin.pack .. ":" .. plugin.name
+    log("Running git " .. subcmd .. " for: " .. logid)
+
     -- To read command output.
     local stdout = vim.loop.new_pipe(false)
     local stderr = vim.loop.new_pipe(false)
