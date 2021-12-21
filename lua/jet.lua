@@ -4,14 +4,14 @@ local fn = vim.fn
 
 -- List of all plugins.
 local registry = {}
-
 -- Path to pack dir.
 local pack_dir = fn.stdpath("data") .. "/site/pack/"
-
 -- Jet logs.
 local log_file = fn.stdpath("data") .. "/jet.log"
 
---- UTIL FUNCTIONS
+--[
+--- UTILITY FUNCTIONS
+--]
 
 -- Returns first item that evalutes
 -- to true when `f` is applied.
@@ -21,7 +21,7 @@ local function list_find(list, f)
     end
 end
 
--- Returns plugin matching `name`.
+-- Returns plugin with the specified `name`.
 local function find_plugin(name)
     return list_find(registry, function(p) return p.name == name end)
 end
@@ -31,8 +31,9 @@ local function get_path(opt, pack)
     return pack_dir .. pack .. "/" .. opt .. "/"
 end
 
-
+--[
 --- ERROR HANDLING & LOGGING
+--]
 
 -- Jet errors.
 local errs = {
@@ -61,8 +62,9 @@ local function echo_err(code)
     vim.cmd("echohl None")
 end
 
-
+--[
 --- JET BUFFER
+--]
 
 -- Sets window/buffer options and header.
 local function prep_jet_buf()
@@ -147,8 +149,9 @@ local function clear_jet_buf()
     line_ids = {}
 end
 
-
+--[
 --- OPTSYNCING
+--]
 
 -- Check if a plugin is optsynced. We consider a plugin
 -- optsynced if its .git/HEAD file is readable in the
@@ -156,7 +159,7 @@ end
 -- readable in either the <pack>/start/<plugin> or
 -- <pack>/opt/<plugin> dir, we consider it installed but not
 -- optsynced. This function returns 1 for optsynced, 0 for
--- installed, and -1 otherwise.
+-- installed, and -1 otherwise (considered missing).
 local function is_optsynced(plugin)
     -- Check it's actual directory.
     local found_synced = io.open(plugin.dir .. "/.git/HEAD", "r")
@@ -204,8 +207,9 @@ local function optsync_plugin(plugin)
     end
 end
 
-
---- PLUGIN-RELATED UTILS
+--[
+--- PLUGIN-RELATED UTILS / LAZY-LOADING
+--]
 
 -- Returns plugin name if provided by user,
 -- otherwise obtains name from plugin uri.
@@ -243,9 +247,6 @@ local function load_plugin(plugin)
     end
 end
 
-
---- LAZY LOADING
-
 -- Initializes plugin's lazy loading autocmd.
 local function init_lazy_load(plugin)
     if plugin.on then
@@ -263,8 +264,9 @@ local function init_lazy_load(plugin)
     end
 end
 
-
+--[
 --- INIT PACK/PLUGIN
+--]
 
 -- Initialize a plugin object, and
 -- store it in the registry.
@@ -324,8 +326,9 @@ local function init_pack(pack)
     end
 end
 
-
+--[
 --- GIT SPAWN
+--]
 
 -- Store handles for easy access.
 local spawned_handles = {}
@@ -389,8 +392,9 @@ local function git_spawn(subcmd, plugin, hook)
     vim.loop.read_start(stderr, on_read)
 end
 
-
---- INSTALL
+--[
+--- INSTALL & UPDATE PLUGINS
+--]
 
 -- Spawns git process to install missing plugins.
 -- If optional `pack` arg is given, only missing
@@ -412,9 +416,6 @@ local function install_plugins(pack)
     if installed == 0 then jet_buf_write("Nothing to install!") end
 end
 
-
---- UPDATE
-
 -- Spawns git process to update each plugin.
 -- If optional `pack` arg is given, only plugins
 -- from that pack will be installed.
@@ -429,8 +430,9 @@ local function update_plugins(pack)
     end
 end
 
-
--- PLUGIN STATUS --------------------------------------------------------------
+--[
+--- PLUGIN STATUS
+--]
 
 -- Log which plugins are installed/missing.
 local function plugin_status()
@@ -455,8 +457,9 @@ local function plugin_status()
    end
 end
 
-
+--[
 --- CLEAN PLUGINS
+--]
 
 -- Returns list of dirs for unused plugins in `dir`.
 local function get_unused_dirs(dir)
@@ -541,8 +544,9 @@ local function clean_plugins()
     end)
 end
 
-
--- INITIALIZE -----------------------------------------------------------------
+--[
+--- INITIALIZE
+--]
 
 log("Initializing Jet.")
 if fn.executable("git") ~= 1 then echo_err(20) end
