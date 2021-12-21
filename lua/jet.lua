@@ -548,8 +548,10 @@ end
 --- INITIALIZE
 --]
 
-log("Initializing Jet.")
+-- Check git executable is available.
 if fn.executable("git") ~= 1 then echo_err(20) end
+-- Clear log file if larger than 500KB
+if fn.getfsize(log_file) >= 500000 then fn.writefile({}, log_file) end
 
 vim.cmd([[
     command -nargs=0 JetLog lua vim.cmd("vsplit " .. require'jet'.log_file)
