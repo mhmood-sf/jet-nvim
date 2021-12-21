@@ -43,7 +43,8 @@ local errs = {
     [20] = "'git' executable not found. Some commands may fail."
 }
 
--- Write `str` to log file along with date & time.
+-- Write `str` to log file along with date & time. Mostly
+-- used when interacting with vim/doing file IO.
 local function log(str)
     local s = fn.strftime("[%Y-%b-%d | %H:%M] ") .. str
     fn.writefile({s}, log_file, "a")
@@ -68,6 +69,7 @@ end
 
 -- Sets window/buffer options and header.
 local function prep_jet_buf()
+    log("Preparing Jet Buffer.")
     vim.cmd("setfiletype Jet")
 
     vim.bo.bufhidden = "hide"
@@ -161,6 +163,7 @@ end
 -- optsynced. This function returns 1 for optsynced, 0 for
 -- installed, and -1 otherwise (considered missing).
 local function is_optsynced(plugin)
+    log("Checking is_optsynced for: " .. plugin.name)
     -- Check it's actual directory.
     local found_synced = io.open(plugin.dir .. "/.git/HEAD", "r")
     if found_synced then
@@ -277,7 +280,6 @@ local function init_plugin(pack, data)
     local opt   = (type(data.opt) == "nil") and false or data.opt
     local dir   = pack_dir .. pack .. (opt and "/opt/" or "/start/") .. name
 
-    log("Initialized plugin data for: " .. name)
     return {
         name    = name,
         pack    = pack,
@@ -296,7 +298,6 @@ end
 -- adds them to the registry and initializes them.
 local function init_pack(pack)
     return function(list)
-        log("Initializing pack: " .. pack)
         for _, data in ipairs(list) do
             local data_t = type(data)
             -- Ensure pack entry is a table or string.
@@ -345,6 +346,7 @@ local function git_spawn(subcmd, plugin, hook)
     -- Wrap so that Nvim API can be called inside loop.
     local on_read = vim.schedule_wrap(function (err, data)
         if err then
+            log(logid .. " " .. err)
             jet_buf_write_to(logid, err)
         elseif data then
             -- Ignore whitespace/newlines.
@@ -506,7 +508,7 @@ local function clean_plugins()
     end
 
     -- Log unused plugin paths.
-    jet_buf_write("", "Unused plugins found:", "")
+    jet_buf_write("Unused plugins found:", "")
     for _, path in ipairs(unused) do jet_buf_write(path) end
 
     -- Use prompt buffer to confirm before proceeding.
@@ -522,7 +524,7 @@ local function clean_plugins()
         -- Anything starting with y is taken as yes.
         if vim.startswith(fn.tolower(txt), "y") then
             for _, path in ipairs(unused) do fn.delete(path, "rf") end
-            log("Removed " .. #unused .. "unused plugin(s).")
+            log("Removed " .. #unused .. " unused plugin(s).")
             jet_buf_write("Removed " .. #unused .. " unused plugin(s).")
         else
             log("JetClean command cancelled.")
