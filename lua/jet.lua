@@ -243,7 +243,7 @@ local function load_plugin(plugin)
     local is_name = type(plugin) == "string"
     local plugin_data = is_name and find_plugin(plugin) or plugin
     if plugin_data then
-        log("Loading plugin: " .. plugin.name)
+        log("Loading plugin: " .. plugin_data.name)
         vim.cmd("packadd " .. plugin_data.name)
         plugin_data._loaded = true
         if plugin_data.cfg then plugin_data.cfg() end
