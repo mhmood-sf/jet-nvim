@@ -249,13 +249,13 @@ end
 -- Returns git process args if provided by user,
 -- otherwise the defaults.
 local function get_plugin_args(plugin)
-    if type(plugin) == "string" or plugin.git == nil then
+    if type(plugin) == "string" or plugin.args == nil then
         -- See: https://github.blog/2020-12-21-get-up-to-speed-with-partial-clone-and-shallow-clone/
         -- Shallow clones will still download the entire history
         -- when updating, so we use partial clones to avoid that.
         return { "--filter=blob:none" }
     end
-    return plugin.git
+    return plugin.args
 end
 
 -- Loads a specific plugin and runs it's cfg function.
