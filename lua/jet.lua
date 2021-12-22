@@ -374,8 +374,8 @@ local function git_spawn(args, on_read, on_exit)
     -- Declare vars so we can close them in the exit callback.
     local handle, pid
     -- Spawn process with opts and exit callback.
-    -- Also wrap callback in case on_exit invokes Nvim API.
-    -- (otherwise, API functions are not allowed in event loop.)
+    -- Also schedule_wrap callback in case on_exit invokes the Nvim
+    -- API (otherwise, API functions are not allowed in event loop).
     handle, pid = uv.spawn("git", opts, vim.schedule_wrap(function(code)
         if not handle:is_closing() then handle:close() end
         stdout:close(); stderr:close()
@@ -383,30 +383,37 @@ local function git_spawn(args, on_read, on_exit)
         on_exit(code)
     end))
 
-    -- Start reading stdout. Again, wrap callback in case Nvim API
-    -- is invoked.
-    stdout:read_start(vim.schedule_wrap(function(error, data)
+    -- Start reading stdout. Most of git's output is through stderr,
+    -- so for stdout we just log whatever we get.
+    stdout:read_start(function(error, data)
         if error then log_write(error) end
-        if data then log_write(data); on_read(data) end
-    end))
-
-    -- Start reading stderr. Just write output to log file.
-    stderr:read_start(function(error, data)
-        if error then log_write(error) elseif data then log_write(data) end
+        if data then log_write(data) end
     end)
+
+    -- Start reading stderr. Here we call the on_read arg to handle
+    -- the data, and also wrap it in case it calls the Nvim API
+    stderr:read_start(vim.schedule_wrap(on_read))
 
     log_write("Spawned new git process with pid: " .. pid)
 end
 
 -- Returns the `on_read` callback for stdout pipe.
 local function git_on_read(logid)
-    return function(data)
-        -- Ignore whitespace/newlines.
-        local lines = string.gmatch(data, "%s*([^\r\n]*)%s*")
-        for line in lines do
-            -- Only write non-empty lines.
-            if string.match(line, "[^%s]") then
-                jet_buf_write_to(logid, line)
+    return function(error, data)
+        if error then log_write(error) end
+        if data then
+            -- Ignore whitespace/newlines.
+            local lines = string.gmatch(data, "%s*([^\r\n]*)%s*")
+            for line in lines do
+                -- Only write non-empty lines.
+                if string.match(line, "[^%s]") ~= nil then
+                    -- Only log progress from 0-9% and 100%,
+                    -- and ignore the unecessary lines between.
+                    if string.match(line, "[^%d]%d%d%%") == nil then
+                        log_write(line)
+                    end
+                    jet_buf_write_to(logid, line)
+                end
             end
         end
     end
