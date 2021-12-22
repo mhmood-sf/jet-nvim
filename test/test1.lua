@@ -1,6 +1,9 @@
+local Jet = require"lua/jet"
+
 local function prep()
     -- start with a clean dir
-    local testpack = vim.g.jet_packpath .. "/pack/test1/"
+    local testpack = vim.g.jet_pack_dir .. "test1/"
+    print("testpack: " .. testpack)
     vim.fn.delete(testpack, "rf")
 
     -- TEST CONFIG
@@ -22,8 +25,7 @@ local function prep()
 
         { uri   = "git@github.com:norcalli/nvim-colorizer.lua",
           name  = "colorizer",
-          flags = { "--depth", "1", "--branch", "color-editor" },
-          cfg   = function() require"colorizer".setup() end },
+          flags = { "--depth", "1", "--branch", "color-editor" } },
 
         { uri = "git@github.com:preservim/nerdtree",
           opt = true, 
@@ -38,7 +40,7 @@ local function prep()
 end
 
 local function run()
-    vim.cmd "JetInstall test1"
+    Jet.install("test1")
 end
 
 return { prep = prep, run = run }

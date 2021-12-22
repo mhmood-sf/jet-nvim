@@ -1,7 +1,9 @@
+local Jet = require"lua/jet"
+
 local function prep()
     -- start with a clean dir
-    local testpackA = vim.fn.expand("%:p:h") .. "/pack/test3a/"
-    local testpackB = vim.fn.expand("%:p:h") .. "/pack/test3b/"
+    local testpackA = vim.g.jet_pack_dir .. "/pack/test3a/"
+    local testpackB = vim.g.jet_pack_dir .. "/pack/test3b/"
     vim.fn.delete(testpackA, "rf")
     vim.fn.delete(testpackB, "rf")
 
@@ -25,13 +27,15 @@ local function prep()
     }
 
     -- First install some plugins
-    vim.cmd "JetInstall"
+    Jet.install()
 end
 
 
 local function run()
-    -- clear registry here
-    -- TODO
+    -- Clear registry.
+    for i, v in ipairs(Jet.registry) do
+        Jet.registry[i] = nil
+    end
 
     -- Omit pack test3b entirely, and one plugin
     -- from test3a.
@@ -40,7 +44,7 @@ local function run()
           opt  = true },
     }
 
-    vim.cmd "JetClean"
+    Jet.clean()
 end
 
 return { prep = prep, run = run }
