@@ -29,7 +29,7 @@ local errs = {
 local function log_write(msg)
     -- Make sure log_handle is available.
     if log_handle ~= nil then
-        local str = os.date("[%Y-%b-%d | %H:%M] ") .. msg
+        local str = os.date("[%Y-%b-%d | %H:%M] ") .. msg .. "\n"
         log_handle:write(str)
     end
 end
