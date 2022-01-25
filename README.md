@@ -4,9 +4,11 @@ Jet is a simple, single-file plugin manager for neovim. The aim is to
 find a middleground between the lightweight [paq-nvim](https://github.com/savq/paq-nvim)
 and the heavyweight [packer.nvim](https://github.com/wbthomason/packer.nvim).
 
-> ⚠ Jet is not yet at a 'stable' stage - most features mostly work, but
-> there is still testing and bug-hunting to be done. Please feel free to
-> open an issue if you encounter bugs or strange behaviour.
+> ⚠ Jet is still in development stages - many features mostly work, but
+> there is still testing and bug-hunting to be done, and breaking changes
+> may be made at any time. Information in the README may also be outdated.
+> Please feel free to open an issue if you encounter bugs or strange behaviour,
+> or need help with this plugin.
 
 ## Features
 - Written and configured in lua
