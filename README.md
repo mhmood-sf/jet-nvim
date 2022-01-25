@@ -134,7 +134,7 @@ called *after* the plugin is loaded.
 
 ## More Examples
 
-TODO. For now, you can take a look [here](https://github.com/quintik/turbo-octo/blob/master/init.lua#L82).
+TODO. For now, you can take a look [here](https://github.com/quintik/turbo-octo/blob/master/lua/jet-config.lua).
 
 ## LICENSE
 
