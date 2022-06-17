@@ -44,7 +44,7 @@ local function spawn_git(opts, on_read, on_exit)
         if not handle:is_closing() then handle:close() end
         stdout:close(); stderr:close();
         -- Log end of process.
-        log.write("Closed pid: " .. pid .. ", code: " .. code)
+        log.write("PID " .. pid .. ": closing process, code: " .. code)
         -- Run on_exit callback.
         on_exit(code)
     end))
@@ -52,21 +52,21 @@ local function spawn_git(opts, on_read, on_exit)
     -- Start reading stdout. Most of git's output is through stderr,
     -- so for stdout we just log whatever we get.
     stdout:read_start(function(error, data)
-        if error then log.write(error) end
-        if data then log.write(data) end
+        if error then log.write("PID " .. pid .. ": " .. error) end
+        if data then log.write("PID " .. pid .. ": " .. data) end
     end)
 
     -- Start reading stderr. Here we call the on_read arg to handle
     -- the data, and also wrap it in case it calls the Nvim API
     stderr:read_start(vim.schedule_wrap(on_read))
 
-    log.write("Spawned new git process with pid: " .. pid)
+    log.write("Spawned new git process with PID: " .. pid)
 end
 
 -- Returns the `on_read` callback for stdout pipe.
 local function get_on_read_callback(logid)
     return function(error, data)
-        if error then log.write(error) end
+        if error then log.write(logid .. " error: " .. error) end
         if data then
             -- Ignore whitespace/newlines.
             local lines = string.gmatch(data, "%s*([^\r\n]*)%s*")
@@ -76,8 +76,10 @@ local function get_on_read_callback(logid)
                     -- Only log progress from 0-9% and 100%,
                     -- and ignore the unecessary lines between.
                     if string.match(line, "[^%d]%d%d%%") == nil then
-                        log.write(line)
+                        log.write("<" .. logid .. "> " .. line)
                     end
+                    -- But for the jet buffer, we log the full
+                    -- progress because it looks cool.
                     buf.write_to(logid, line)
                 end
             end
