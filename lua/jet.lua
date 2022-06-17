@@ -170,7 +170,7 @@ if fn.executable("git") ~= 1 then log.err(20) end
 -- Editor commands.
 vim.cmd([[
     command -nargs=0 JetLog lua vim.cmd("vsplit " .. require"jet.log".LOG_FILE)
-    command -nargs=1 JetAdd lua require"jet".load(<f-args>)
+    command -nargs=1 JetAdd lua require"jet.plugin".load(<f-args>)
     command -nargs=0 JetClean lua require"jet".clean()
     command -nargs=0 JetStatus lua require"jet".status()
     command -nargs=? JetUpdate lua require"jet".update(<f-args>)
@@ -181,7 +181,6 @@ vim.cmd([[
 return {
     registry = registry,
     pack     = require("jet.plugin").create_pack,
-    load     = require("jet.plugin").load,
     clean    = clean_plugins,
     status   = plugin_status,
     update   = update_plugins,
