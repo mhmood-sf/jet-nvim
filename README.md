@@ -18,18 +18,18 @@ and the heavyweight [packer.nvim](https://github.com/wbthomason/packer.nvim).
 
 ## Installation
 
-> NOTE: The plugin has not been tested for versions older than 0.5.0, but
-> should still work more or less. If you find any bugs feel free to open an
-> issue.
+> NOTE: The plugin has not been tested for versions older than v0.7.0, but
+> should still work more or less for previous versions, at least up to v0.5.0.
+> If you find any bugs feel free to open an issue.
 
 #### UNIX / Linux
 ```
-git clone --depth 1 https://github.com/quintik/jet-nvim ~/.local/share/nvim/site/pack/jet/start/jet-nvim
+git clone --filter=blob:none https://github.com/quintik/jet-nvim ~/.local/share/nvim/site/pack/jet/start/jet-nvim
 ```
 
 #### Windows
 ```
-git clone --depth 1 https://github.com/quintik/jet-nvim "$env:LOCALAPPDATA\nvim-data\site\pack\jet\start\jet-nvim"
+git clone --filter=blob:none https://github.com/quintik/jet-nvim "$env:LOCALAPPDATA\nvim-data\site\pack\jet\start\jet-nvim"
 ```
 
 ## Usage
@@ -54,12 +54,13 @@ Jet.pack "myplugins" {
 
     -- Example with all options (read below for more details):
     { uri   = "https://github.com/author/plugin",
-      name  = "plugin",
+      name  = "myplugin",
       opt   = true,
-      flags = { "--branch", "dev" },
-      on    = { "Event" },
+      args  = { "--branch", "dev" },
+      on    = { "CmdUndefined MyCommand" },
       pat   = { ".ft" },
-      cfg   = function() require "cfg" end }
+      cfg   = function() require "cfg" end,
+      run   = function(e) if e === "install" then doSmth() else doSmthElse() end end }
 }
 ```
 
