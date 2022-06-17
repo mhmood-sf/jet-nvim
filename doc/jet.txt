@@ -62,4 +62,3 @@ Open an issue: https://github.com/quintik/jet-nvim/issues
 5. License                                                         *JetLicense*
 
 MIT License: https://github.com/quintik/jet-nvim/blob/master/LICENSE
-
