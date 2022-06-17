@@ -19,6 +19,6 @@ Here's what each file tests:
 
 ## To-Do
 
-- [ ] Also write tests for local functions in jet.
+- [ ] Unit tests for helpers/other functions.
 - [ ] Need more failing test cases.
-- [ ] ?
+- [ ] Lazy loading in the tests fails because runtimepaths I think. Need to set them up properly.

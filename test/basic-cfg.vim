@@ -13,7 +13,7 @@ set notitle                " Do not set terminal title
 filetype plugin indent on  " Allow autoindenting depending on filetype
 syntax on                  " Syntax highlighting
 
-set runtimepath=
+execute "set runtimepath=" . expand("%:p:h")
 
 execute "set packpath=" . g:jet_pack_dir
 

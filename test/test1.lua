@@ -28,9 +28,9 @@ local function prep()
           flags = { "--depth", "1", "--branch", "color-editor" } },
 
         { uri = "git@github.com:preservim/nerdtree",
-          opt = true, 
-          on  = { "CmdUndefined" },
-          pat = { "NERDTree" } },
+          opt = true,
+          on  = { "CmdUndefined NERDTree" },
+          cfg = function() print("loading nerdtree") end },
 
         { uri = "git@github.com:Xuyuanp/scrollbar.nvim",
           opt = false,
