@@ -175,7 +175,7 @@ vim.cmd([[
     command -nargs=0 JetStatus lua require"jet".status()
     command -nargs=? JetUpdate lua require"jet".update(<f-args>)
     command -nargs=? JetInstall lua require"jet".install(<f-args>)
-    command -nargs=0 JetWipeLog lua vim.fn.writefile({}, require"jet".LOG_FILE)
+    command -nargs=0 JetWipeLog lua vim.fn.writefile({}, require"jet.log".LOG_FILE)
 ]])
 
 return {
