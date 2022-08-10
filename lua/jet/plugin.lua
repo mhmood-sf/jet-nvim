@@ -18,6 +18,10 @@ local registry = {}
 -- <pack>/opt/<plugin> dir, we consider it installed but not
 -- optsynced. This function returns 1 for optsynced, 0 for
 -- installed, and -1 otherwise (considered missing).
+-- NOTE that if a plugin directory is not a git repository,
+-- then the plugin is ALSO considered missing, even if it is
+-- technically optsynced. Ensure there is a git repository
+-- in each plugin directory.
 local function is_optsynced(plugin)
     log.write("Checking is_optsynced for: " .. plugin.name)
     -- Check it's actual directory.
