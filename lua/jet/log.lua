@@ -14,7 +14,7 @@ local errs = {
     [11] = "config entries must be either strings or tables.",
     [12] = "'uri' field is required for all table entries.",
     [13] = "duplicate names found! Please ensure plugins are named uniquely.",
-    [20] = "'git' executable not found. Some commands may fail.",
+    [20] = "git executable not found. Some commands may fail.",
     [30] = "unable to open log file (" .. LOG_FILE .. ")"
 }
 
